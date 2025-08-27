@@ -224,16 +224,6 @@ func get_simulation_particles(index: int) -> Array[Vector3]:
 	return [p0, p1, p2, p3]
 
 
-# Camera handling that works in both editor and runtime
-# Suggested by @mikest - fixes rope visualization in Godot editor
-func _get_camera() -> Camera3D:
-	var cam := get_viewport().get_camera_3d()
-	
-	if Engine.is_editor_hint():
-		return EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
-	else:
-		return cam
-
 func get_average_segment_length() -> float:
 	return rope_length / float(simulation_particles - 1)
 
@@ -467,7 +457,7 @@ func draw_curve() -> void:
 	if _camera == null:
 		_camera = _get_camera()
 		if _camera == null:
-			#print("Warning: No camera found for rope rendering")
+			print("Warning: No camera found for rope rendering")
 			return
 
 	var camera_position: Vector3 = _camera.global_position
