@@ -1,4 +1,3 @@
-
 # MIT License
 #
 # Copyright (c) 2021 Shashank C; Copyright (c) 2023 Zae Chao(zaevi); No Copyright (-c) Tshmofen / Timofey Ivanov
@@ -163,16 +162,16 @@ var _attach_end: Node3D = null
 @export_group("Collision")
 
 @export_enum("StaticOnly", "DynamicOnly", "All")
-var rope_collision_type: int = 0  # 0 = StaticOnly
+var rope_collision_type: int = 0 # 0 = StaticOnly
 @export_enum("None", "StickyStretch", "SlideStretch")
-var rope_collision_behavior: int = 0  # 0 = None
+var rope_collision_behavior: int = 0 # 0 = None
 
 @export_range(1.0, 20.0) var max_rope_stretch: float = 1.1
 @export_range(1.0, 20.0) var slide_ignore_collision_stretch: float = 1.5
 @export_range(1, 256) var max_dynamic_collisions: int = 32
 
 var _static_collision_mask: int = 1
-@export var static_collision_mask: int = 1:
+@export_flags_3d_physics var static_collision_mask: int = 1:
 	set(value):
 		static_collision_mask = value
 		_static_collision_mask = value
@@ -181,7 +180,7 @@ var _static_collision_mask: int = 1
 		if _collision_shape_parameters:
 			_collision_shape_parameters.collision_mask = value
 
-@export var dynamic_collision_mask: int = 0
+@export_flags_3d_physics var dynamic_collision_mask: int = 0
 
 var _hit_from_inside: bool = true
 @export var hit_from_inside: bool = true:
@@ -447,6 +446,15 @@ func collide_rope(dynamic_collisions: Array) -> void:
 
 		_particle_data.particles[i] = current_point
 
+
+func _get_camera() -> Camera3D:
+	var cam := get_viewport().get_camera_3d()
+	
+	if Engine.is_editor_hint():
+		return EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
+	else:
+		return cam
+
 func draw_curve() -> void:
 	# Ensure mesh exists
 	if _mesh == null:
@@ -514,7 +522,7 @@ func verlet_process(delta: float) -> void:
 		p.position_current = (2.0 * p.position_current) - p.position_previous + (delta * delta * p.acceleration)
 		p.position_previous = position_current_copy
 
-		_particle_data.particles[i] = p  # write back the modified particle if using array of dictionaries or structs
+		_particle_data.particles[i] = p # write back the modified particle if using array of dictionaries or structs
 
 func apply_forces() -> void:
 	for i in simulation_particles:
