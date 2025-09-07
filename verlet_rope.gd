@@ -59,7 +59,7 @@ class RopeCollisionInfo:
 signal simulation_step_event_handler(delta: float)
 
 # --- Constants ---
-const DEFAULT_MATERIAL_PATH := "res://addons/verlet_rope_4/materials/rope_default.material"
+const DEFAULT_MATERIAL_PATH := "res://addons/verlet_rope_4_gd/materials/rope_default.material"
 const NO_NOTIFIER_WARNING := "Consider checking 'UseVisibleOnScreenNotifier' to disable rope visuals when it's not on screen for increased performance."
 const CREATION_STAMP_META := "creation_stamp"
 const COLLISION_CHECK_LENGTH := 0.001
@@ -618,7 +618,7 @@ func _ready() -> void:
 
 	# Load default material if not set
 	if material_override == null:
-		var mat_path = "res://addons/verlet_rope_4_gd/materials/rope_default.material"
+		var mat_path = DEFAULT_MATERIAL_PATH
 		if ResourceLoader.exists(mat_path):
 			material_override = load(mat_path)
 		else:
