@@ -86,8 +86,13 @@ var _simulation_particles: int = 10
 
 @export_group("Basics")
 
+## Total length of the rope in meters
 @export var rope_length: float = 5.0
+
+## Visual thickness of the rope mesh
 @export var rope_width: float = 0.07
+
+## Number of simulation points along the rope (higher values = smoother but more expensive)
 @export_range(3, 300) var simulation_particles: int = 10:
 	set(value):
 		simulation_particles = value
@@ -96,6 +101,7 @@ var _simulation_particles: int = 10
 		_particle_data.resize(simulation_particles)
 		create_rope()
 
+## Automatically disable rope rendering when off-screen for performance optimization
 @export var use_visible_on_screen_notifier: bool = true:
 	set(value):
 		use_visible_on_screen_notifier = value
@@ -103,17 +109,19 @@ var _simulation_particles: int = 10
 
 @export_group("Attachment")
 
-# Object to attach to the rope end (configured in editor)
+## NodePath to a Node3D that will follow the rope's end position
 @export var attached_object: NodePath
 var _editor_attached_object: Node3D = null
 
-# Whether the attached object should follow the rope's end orientation
+## If true, the attached object will rotate to match the rope's end orientation
 @export var rotate_attached_object: bool = false
 
 # Node that will follow the end of the rope (programmatic attachment)
 var _attached_object: Node3D = null
 
 var _attach_start := true
+
+## If true, the rope's start point is fixed to this node's position
 @export var attach_start: bool = true:
 	set(value):
 		attach_start = value
@@ -122,6 +130,8 @@ var _attach_start := true
 			_particle_data.particles[0].is_attached = value
 
 var _attach_end: Node3D = null
+
+## Node3D to attach the rope's end point to (will follow that node's position)
 @export var attach_end: Node3D:
 	set(value):
 		attach_end = value
@@ -131,46 +141,92 @@ var _attach_end: Node3D = null
 
 
 @export_group("Simulation")
+
+## Physics update rate for rope simulation in Hz (higher = more stable but more expensive)
 @export_range(30, 265) var simulation_rate: int = 60
+
+## Number of constraint solver iterations per simulation step (higher = more rigid)
 @export var iterations: int = 2
+
+## Number of iterations to run during rope initialization to settle the rope
 @export var preprocess_iterations: int = 5
+
+## Delta time used for each preprocess iteration step
 @export var preprocess_delta: float = 0.016
+
+## How rigid the rope is (0.0 = very elastic, 1.5 = very stiff)
 @export_range(0.0, 1.5) var stiffness: float = 0.9
+
+## If true, rope initializes from start point; if false, rope hangs down immediately
 @export var start_simulation_from_start_point: bool = true
+
+## Enable or disable physics simulation
 @export var simulate: bool = true
+
+## Enable or disable rope mesh rendering
 @export var draw: bool = true
+
+## Automatically start simulation and drawing when entering the scene
 @export var start_draw_simulation_on_start: bool = true
+
+## Distance from camera where rope mesh subdivision detail starts to reduce
 @export var subdivision_lod_distance: float = 15.0
 
 @export_group("Gravity")
+
+## Enable or disable gravity force on the rope
 @export var apply_gravity: bool = true
+
+## Gravity vector direction and magnitude
 @export var gravity: Vector3 = Vector3.DOWN * 9.8
+
+## Multiplier for gravity strength
 @export var gravity_scale: float = 1.0
 
 @export_group("Wind")
 
+## Enable or disable wind force on the rope
 @export var apply_wind: bool = false
+
+## Noise texture used to create turbulent wind patterns
 @export var wind_noise: FastNoiseLite = null
+
+## Base wind direction and strength
 @export var wind: Vector3 = Vector3(1.0, 0.0, 0.0)
+
+## Multiplier for wind force intensity
 @export var wind_scale: float = 20.0
 
 @export_group("Damping")
 
+## Enable or disable velocity damping (air resistance)
 @export var apply_damping: bool = true
+
+## Strength of damping force (higher = rope slows down faster)
 @export var damping_factor: float = 100.0
 
 @export_group("Collision")
 
+## Type of objects the rope can collide with (StaticOnly, DynamicOnly, or All)
 @export_enum("StaticOnly", "DynamicOnly", "All")
-var rope_collision_type: int = 0 # 0 = StaticOnly
-@export_enum("None", "StickyStretch", "SlideStretch")
-var rope_collision_behavior: int = 0 # 0 = None
+var rope_collision_type: int = 0
 
+## How rope behaves during collisions (None, StickyStretch stops when stretched, SlideStretch slides along surfaces)
+@export_enum("None", "StickyStretch", "SlideStretch")
+var rope_collision_behavior: int = 0
+
+## Maximum rope stretch multiplier before collision behavior activates
 @export_range(1.0, 20.0) var max_rope_stretch: float = 1.1
+
+## Stretch threshold where SlideStretch mode ignores collisions to allow sliding
 @export_range(1.0, 20.0) var slide_ignore_collision_stretch: float = 1.5
+
+## Maximum number of dynamic collision objects to check per frame
 @export_range(1, 256) var max_dynamic_collisions: int = 32
 
 var _static_collision_mask: int = 1
+
+## Physics layers for static collision detection
 @export_flags_3d_physics var static_collision_mask: int = 1:
 	set(value):
 		static_collision_mask = value
@@ -180,9 +236,12 @@ var _static_collision_mask: int = 1
 		if _collision_shape_parameters:
 			_collision_shape_parameters.collision_mask = value
 
+## Physics layers for dynamic collision detection
 @export_flags_3d_physics var dynamic_collision_mask: int = 0
 
 var _hit_from_inside: bool = true
+
+## Allow rope to detect collisions from inside collision shapes
 @export var hit_from_inside: bool = true:
 	set(value):
 		hit_from_inside = value
@@ -191,6 +250,8 @@ var _hit_from_inside: bool = true
 			_ray_cast.hit_from_inside = value
 
 var _hit_back_faces: bool = true
+
+## Allow rope to collide with back faces of mesh colliders
 @export var hit_back_faces: bool = true:
 	set(value):
 		hit_back_faces = value
@@ -200,6 +261,7 @@ var _hit_back_faces: bool = true
 
 @export_group("Debug")
 
+## Draw debug lines showing particle tangent, normal, and binormal vectors
 @export var draw_debug_particles: bool = false
 
 # UTIL
