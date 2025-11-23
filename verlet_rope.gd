@@ -83,6 +83,8 @@ var _space_state: PhysicsDirectSpaceState3D
 var _collision_shape_parameters: PhysicsShapeQueryParameters3D
 
 var _simulation_particles: int = 10
+## Cached editor script to avoid repeated load() calls in editor mode (see editor.gd for details)
+var _editor_script: GDScript
 
 @export_group("Basics")
 
@@ -503,9 +505,11 @@ func _get_camera() -> Camera3D:
 	var cam := get_viewport().get_camera_3d()
 	
 	if Engine.is_editor_hint():
-		return EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
-	else:
-		return cam
+		if not _editor_script:
+			_editor_script = load("res://addons/verlet_rope_4_gd/editor.gd")
+		return _editor_script.get_camera()
+	
+	return cam
 
 func draw_curve() -> void:
 	# Ensure mesh exists
