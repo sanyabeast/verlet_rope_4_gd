@@ -111,15 +111,17 @@ var _editor_script: GDScript
 
 @export_group("Attachment")
 
-## NodePath to a Node3D that will follow the rope's end position
-@export var payload_object: NodePath
-var _editor_payload_object: Node3D = null
+## Node3D that will follow the rope's end position (can be set dynamically)
+@export var payload_object: Node3D:
+	set(value):
+		payload_object = value
+		if Engine.is_editor_hint() and _particle_data != null:
+			update_attached_object_editor()
+	get:
+		return payload_object
 
 ## If true, the attached object will rotate to match the rope's end orientation
 @export var rotate_payload_object: bool = false
-
-# Node that will follow the end of the rope (programmatic attachment)
-var _payload_object: Node3D = null
 
 var _attach_start := true
 
@@ -632,14 +634,7 @@ func _ready() -> void:
 		draw = true
 		simulate = true
 
-	# Process object attached via editor
-	_editor_payload_object = null
-	if not payload_object.is_empty():
-		var node = get_node_or_null(payload_object)
-		if node is Node3D:
-			_editor_payload_object = node
-		else:
-			push_warning("Attached object path is not a Node3D")
+	# Payload object is now directly assigned, no need for path resolution
 
 	# Ensure ImmediateMesh exists and is unique to this instance
 	#_mesh = Mesh as ImmediateMesh
@@ -705,7 +700,7 @@ func _physics_process(delta: float) -> void:
 			create_rope()
 		
 		# Update editor attachment (if any)
-		if _particle_data != null and not payload_object.is_empty():
+		if _particle_data != null and payload_object != null:
 			update_attached_object_editor()
 			
 
@@ -817,23 +812,24 @@ func _on_screen_exited():
 	print("exited screen")
 	draw = false
 
-# Attaches a Node3D object to follow the end of the rope
+# Attaches an object to follow the rope's end position
 func attach_object_to_end(object: Node3D) -> void:
-	if object == null:
-		return
-		
-	_payload_object = object
-	print("Object attached to rope end: ", object.name)
+	payload_object = object
+	if object:
+		print("Object attached to rope end: ", object.name)
 
 # Removes the attached object from following the rope end
 func detach_object_from_end() -> void:
-	if _payload_object != null:
-		print("Object detached from rope end: ", _payload_object.name)
-		_payload_object = null
+	if payload_object != null:
+		print("Object detached from rope end: ", payload_object.name)
+	payload_object = null
 
-# Updates the position of the object attached to the rope end during gameplay
+# Updates the position of the object attached to the rope end
 func update_attached_objects() -> void:
-	if Engine.is_editor_hint() or _particle_data == null or (_payload_object == null and _editor_payload_object == null):
+	if _particle_data == null or payload_object == null:
+		return
+	
+	if not is_instance_valid(payload_object):
 		return
 	
 	# Get the end particle position and orientation
@@ -841,43 +837,29 @@ func update_attached_objects() -> void:
 	var end_particle = _particle_data.particles[end_index]
 	var end_position = end_particle.position_current
 	
-	# Update programmatically attached object
-	if is_instance_valid(_payload_object):
-		_payload_object.global_position = end_position
-		
-		# Update rotation if enabled
-		if rotate_payload_object:
-			_update_object_rotation(_payload_object, end_particle)
-		
-	# Update object attached via editor
-	if is_instance_valid(_editor_payload_object):
-		_editor_payload_object.global_position = end_position
-		
-		# Update rotation if enabled
-		if rotate_payload_object:
-			_update_object_rotation(_editor_payload_object, end_particle)
+	# Update attached object
+	payload_object.global_position = end_position
+	
+	# Update rotation if enabled
+	if rotate_payload_object:
+		_update_object_rotation(payload_object, end_particle)
 
 # Updates attached object specifically in editor mode
 func update_attached_object_editor() -> void:
 	if not Engine.is_editor_hint() or _particle_data == null:
 		return
 	
-	# Always refresh editor object reference
-	_editor_payload_object = null
-	if not payload_object.is_empty():
-		var node = get_node_or_null(payload_object)
-		if node is Node3D:
-			_editor_payload_object = node
+	if not is_instance_valid(payload_object):
+		return
 	
-	# If we have an object, update its position
-	if is_instance_valid(_editor_payload_object):
-		var end_index = simulation_particles - 1
-		var end_particle = _particle_data.particles[end_index]
-		_editor_payload_object.global_position = end_particle.position_current
-		
-		# Update rotation if enabled
-		if rotate_payload_object:
-			_update_object_rotation(_editor_payload_object, end_particle)
+	# Update object position
+	var end_index = simulation_particles - 1
+	var end_particle = _particle_data.particles[end_index]
+	payload_object.global_position = end_particle.position_current
+	
+	# Update rotation if enabled
+	if rotate_payload_object:
+		_update_object_rotation(payload_object, end_particle)
 
 # Helper to update an object's rotation to match rope end orientation
 func _update_object_rotation(object: Node3D, particle) -> void:
