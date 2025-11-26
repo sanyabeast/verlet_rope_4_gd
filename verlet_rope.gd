@@ -865,9 +865,11 @@ func update_attached_object_editor() -> void:
 		_update_object_rotation(payload_object, end_particle)
 
 # Helper to update an object's rotation to match rope end orientation
-func _update_object_rotation(object: Node3D, particle) -> void:
-	# Create a basis using the particle's orientation vectors
-	var basis = Basis(particle.tangent, particle.binormal, particle.normal)
-	
-	# Convert to a quaternion and set the object's rotation
-	object.global_transform.basis = basis
+func _update_object_rotation(object: Node3D, particle: RopeParticleData.RopeParticle) -> void:
+	var down: Vector3 = particle.tangent
+	var forward: Vector3 = Vector3.FORWARD
+	if abs(down.dot(forward)) > 0.99:
+		forward = Vector3.RIGHT
+	var right: Vector3 = down.cross(forward).normalized()
+	forward = right.cross(down).normalized()
+	object.global_transform.basis = Basis(right, -down, forward)
