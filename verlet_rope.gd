@@ -120,8 +120,9 @@ var _editor_script: GDScript
 	get:
 		return payload_object
 
-## If true, the attached object will rotate to match the rope's end orientation
-@export var rotate_payload_object: bool = true
+## How much the attached object follows rope rotation (0 = no rotation, 1 = fully follows).
+## Values between 0-1 add inertia, making heavier objects rotate slower.
+@export_range(0.0, 1.0) var payload_rotation_weight: float = 1.0
 
 var _attach_start := true
 
@@ -844,7 +845,7 @@ func update_attached_objects() -> void:
 	payload_object.global_position = end_position
 	
 	# Update rotation if enabled
-	if rotate_payload_object:
+	if payload_rotation_weight > 0.0:
 		_update_object_rotation(payload_object, end_particle)
 
 # Updates attached object specifically in editor mode
@@ -861,15 +862,29 @@ func update_attached_object_editor() -> void:
 	payload_object.global_position = end_particle.position_current
 	
 	# Update rotation if enabled
-	if rotate_payload_object:
+	if payload_rotation_weight > 0.0:
 		_update_object_rotation(payload_object, end_particle)
 
-# Helper to update an object's rotation to match rope end orientation
+# Orients object so its -Y axis points along the rope (tangent direction).
+# This makes hanging objects face downward naturally.
+# Uses payload_rotation_weight to interpolate between current and target rotation.
 func _update_object_rotation(object: Node3D, particle: RopeParticleData.RopeParticle) -> void:
+	if payload_rotation_weight <= 0.0:
+		return
+	
 	var down: Vector3 = particle.tangent
 	var forward: Vector3 = Vector3.FORWARD
 	if abs(down.dot(forward)) > 0.99:
 		forward = Vector3.RIGHT
 	var right: Vector3 = down.cross(forward).normalized()
 	forward = right.cross(down).normalized()
-	object.global_transform.basis = Basis(right, -down, forward)
+	var target_basis: Basis = Basis(right, -down, -forward)
+	
+	if payload_rotation_weight >= 1.0:
+		object.global_transform.basis = target_basis
+	else:
+		var current_quat: Quaternion = object.global_transform.basis.get_rotation_quaternion()
+		var target_quat: Quaternion = target_basis.get_rotation_quaternion()
+		if current_quat.dot(target_quat) < 0.0:
+			target_quat = -target_quat
+		object.global_transform.basis = Basis(current_quat.slerp(target_quat, payload_rotation_weight))
