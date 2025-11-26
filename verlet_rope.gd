@@ -121,7 +121,7 @@ var _editor_script: GDScript
 		return payload_object
 
 ## If true, the attached object will rotate to match the rope's end orientation
-@export var rotate_payload_object: bool = false
+@export var rotate_payload_object: bool = true
 
 var _attach_start := true
 
