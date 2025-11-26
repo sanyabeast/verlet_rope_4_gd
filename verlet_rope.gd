@@ -699,14 +699,15 @@ func _physics_process(delta: float) -> void:
 			print("Creating rope in editor")
 			create_rope()
 		
-		# Update editor attachment (if any)
 		if _particle_data != null and payload_object != null:
 			update_attached_object_editor()
-			
 
-	_time += delta
-	_simulation_delta += delta
+	# Unscaled delta ensures consistent update rate in real-time (smooth rendering during bullet time)
+	var unscaled_delta := delta / Engine.time_scale if Engine.time_scale > 0 else delta
+	_time += unscaled_delta
+	_simulation_delta += unscaled_delta
 
+	# Rate limiting: update at simulation_rate Hz in real-time, regardless of time_scale
 	var simulation_step := 1.0 / float(simulation_rate)
 	if _simulation_delta < simulation_step:
 		return
@@ -718,8 +719,10 @@ func _physics_process(delta: float) -> void:
 		_particle_data.particles[0].position_current = global_position
 
 	if simulate:
+		# Scaled delta for physics: rope moves in slow-mo when time_scale < 1
+		var scaled_simulation_delta := _simulation_delta * Engine.time_scale
 		apply_forces()
-		verlet_process(_simulation_delta)
+		verlet_process(scaled_simulation_delta)
 		apply_constraints()
 		
 	# Update position of any attached objects
